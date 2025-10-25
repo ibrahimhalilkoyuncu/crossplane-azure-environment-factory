@@ -23,21 +23,124 @@ spec:
                 type: string
                 description: "The Azure region to deploy resources in."
                 default: "West Europe"
-              aksNodeCount:
-                type: integer
-                description: "Number of nodes in the AKS cluster."
-                default: 1
-              aksNodeImage:
+              owner:
                 type: string
-                description: "The node image to use for AKS nodes."
-                default: "Ubuntu2204"
-              aksNodeSku:
+                description: "The owner of the environment."
+              purpose:
                 type: string
-                description: "The SKU for AKS nodes."
-                default: "Standard_D2_v2"
-              aksKubernetesVersion:
-                type: string
-                description: "The Kubernetes version for the AKS cluster."
-                default: "1.27.0"
+                description: "The purpose of the environment (e.g., dev, qa)."
+              resourceGroup:
+                type: object
+                description: "Resource group configuration."
+                properties:
+                  name:
+                    type: string
+                    description: "Name of the resource group."
+                required:
+                - name
+              aks:
+                type: object
+                description: "AKS cluster configuration."
+                properties:
+                  name:
+                    type: string
+                    description: "Name of the AKS cluster."
+                  version:
+                    type: string
+                    description: "Kubernetes version for AKS."
+                    default: "1.30.0"
+                  nodeCount:
+                    type: integer
+                    description: "Number of nodes in the AKS cluster."
+                    default: 2
+                  nodeImage:
+                    type: string
+                    description: "The node image to use for AKS nodes."
+                    default: "Ubuntu2204"
+                  nodeSku:
+                    type: string
+                    description: "The SKU for AKS nodes."
+                    default: "Standard_D2_v2"
+                  networkProfile:
+                    type: object
+                    description: "Network profile for AKS."
+                    properties:
+                      networkPlugin:
+                        type: string
+                        description: "Network plugin."
+                        default: "azure"
+                      networkPolicy:
+                        type: string
+                        description: "Network policy."
+                        default: "azure"
+                      serviceCidr:
+                        type: string
+                        description: "CIDR range for Kubernetes services."
+                        default: "10.0.3.0/24"
+                      dnsServiceIp:
+                        type: string
+                        description: "IP address for DNS service."
+                        default: "10.0.3.10"
+                required:
+                - name
+                - version
+                - nodeCount
+                - nodeImage
+                - nodeSku
+                - networkProfile
+              keyVault:
+                type: object
+                description: "Key Vault configuration."
+                properties:
+                  name:
+                    type: string
+                    description: "Name of the Key Vault."
+                required:
+                - name
+              network:
+                type: object
+                description: "Network configuration."
+                properties:
+                  vnet:
+                    type: object
+                    description: "Virtual network configuration."
+                    properties:
+                      name:
+                        type: string
+                        description: "Name of the virtual network."
+                      addressSpace:
+                        type: string
+                        description: "Address space for the virtual network."
+                    required:
+                    - name
+                    - addressSpace
+                  subnets:
+                    type: array
+                    description: "List of subnets."
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "Name of the subnet."
+                        addressPrefix:
+                          type: string
+                          description: "Address prefix for the subnet."
+                        purpose:
+                          type: string
+                          description: "Purpose of the subnet (e.g., aks, database)."
+                      required:
+                      - name
+                      - addressPrefix
+                      - purpose
+                required:
+                - vnet
+                - subnets
             required:
             - region
+            - owner
+            - purpose
+            - resourceGroup
+            - aks
+            - keyVault
+            - network

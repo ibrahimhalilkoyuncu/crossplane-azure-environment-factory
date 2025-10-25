@@ -22,19 +22,25 @@ spec:
             base:
               apiVersion: azure.m.upbound.io/v1beta1
               kind: ResourceGroup
-              metadata:
-                name: "rgName-placeholder"
-                labels:
-                  provisioner: crossplane
               spec:
                 forProvider:
                   location: "West Europe"
-                  tags:
-                    provisioner: crossplane
             patches:
               - type: FromCompositeFieldPath
-                fromFieldPath: "metadata.name"
+                fromFieldPath: "spec.resourceGroup.name"
                 toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.owner"
+                toFieldPath: "spec.forProvider.tags.owner"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.purpose"
+                toFieldPath: "spec.forProvider.tags.purpose"
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.region"
                 toFieldPath: "spec.forProvider.location"
@@ -44,24 +50,34 @@ spec:
             base:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: VirtualNetwork
-              metadata:
-                name: "vnetName-placeholder"
-                labels:
-                  provisioner: crossplane
               spec:
                 forProvider:
                   addressSpace: ["10.0.0.0/16"]
                   resourceGroupNameSelector:
                     matchLabels:
-                      provisioner: crossplane
                   location: "West Europe"
             patches:
               - type: FromCompositeFieldPath
-                fromFieldPath: "metadata.name"
+                fromFieldPath: "spec.network.vnet.name"
                 toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.vnet.addressSpace"
+                toFieldPath: "spec.forProvider.addressSpace[0]"
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.region"
                 toFieldPath: "spec.forProvider.location"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.vnet.name"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
 
           # 3. Subnet for AKS
           - name: subnetAks
@@ -69,69 +85,188 @@ spec:
               apiVersion: network.azure.m.upbound.io/v1beta1
               kind: Subnet
               metadata:
-                name: aks-subnet
               spec:
                 forProvider:
                   addressPrefixes: ["10.0.1.0/24"]
                   resourceGroupNameSelector:
                     matchLabels:
-                      provisioner: crossplane
                   virtualNetworkNameSelector:
                     matchLabels:
-                      provisioner: crossplane
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.network.subnets[0].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.subnets[0].addressPrefix"
+                toFieldPath: "spec.forProvider.addressPrefixes[0]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "spec.network.vnet.name"
+                  - fromFieldPath: "spec.network.subnets[0].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.vnet.name"
+                toFieldPath: "spec.forProvider.virtualNetworkNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.virtualNetworkNameSelector.matchLabels[crossplane.io/namespace]"
+
+          # 3b. Subnet for Database
+          - name: subnetDb
+            base:
+              apiVersion: network.azure.m.upbound.io/v1beta1
+              kind: Subnet
+              spec:
+                forProvider:
+                  addressPrefixes: ["10.0.2.0/24"]
+                  resourceGroupNameSelector:
+                    matchLabels:
+                  virtualNetworkNameSelector:
+                    matchLabels:
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.network.subnets[1].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.subnets[1].addressPrefix"
+                toFieldPath: "spec.forProvider.addressPrefixes[0]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "spec.network.vnet.name"
+                  - fromFieldPath: "spec.network.subnets[1].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.vnet.name"
+                toFieldPath: "spec.forProvider.virtualNetworkNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.virtualNetworkNameSelector.matchLabels[crossplane.io/namespace]"
 
           # 4. AKS Cluster
           - name: aksCluster
             base:
               apiVersion: containerservice.azure.m.upbound.io/v1beta1
               kind: KubernetesCluster
-              metadata:
-                name: "aksName-placeholder"
-                labels:
-                  provisioner: crossplane
               spec:
                 forProvider:
                   defaultNodePool:
                     name: default
-                    nodeCount: 1
+                    nodeCount: 2
                     vmSize: Standard_D2_v2
+                    osSku: "Ubuntu2204"
                     vnetSubnetIdSelector:
                       matchLabels:
-                        provisioner: crossplane
                   dnsPrefix: "aks"
                   identity:
                     type: SystemAssigned
                   location: "West Europe"
                   resourceGroupNameSelector:
                     matchLabels:
-                      provisioner: crossplane
                   kubernetesVersion: "1.30.0"
                   networkProfile:
-                    serviceCidr: "10.0.2.0/24"
-                    dnsServiceIp: "10.0.2.10"
                     networkPlugin: "azure"
                     networkPolicy: "calico"
                   tags:
                     provisioner: crossplane
             patches:
               - type: FromCompositeFieldPath
-                fromFieldPath: "metadata.name"
+                fromFieldPath: "spec.aks.name"
                 toFieldPath: "metadata.name"
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.region"
                 toFieldPath: "spec.forProvider.location"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.aksNodeCount"
+                fromFieldPath: "spec.aks.name"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.nodeCount"
                 toFieldPath: "spec.forProvider.defaultNodePool.nodeCount"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.aksNodeSku"
+                fromFieldPath: "spec.aks.nodeSku"
                 toFieldPath: "spec.forProvider.defaultNodePool.vmSize"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.aksKubernetesVersion"
+                fromFieldPath: "spec.aks.nodeImage"
+                toFieldPath: "spec.forProvider.defaultNodePool.osSku"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.version"
                 toFieldPath: "spec.forProvider.kubernetesVersion"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.networkProfile.networkPlugin"
+                toFieldPath: "spec.forProvider.networkProfile.networkPlugin"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.networkProfile.networkPolicy"
+                toFieldPath: "spec.forProvider.networkProfile.networkPolicy"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.networkProfile.serviceCidr"
+                toFieldPath: "spec.forProvider.networkProfile.serviceCidr"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.networkProfile.dnsServiceIp"
+                toFieldPath: "spec.forProvider.networkProfile.dnsServiceIp"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.name"
+                toFieldPath: "spec.forProvider.nodeResourceGroup"
               - type: ToCompositeFieldPath
                 fromFieldPath: "status.atConnection.kubeconfig"
                 toFieldPath: "connectionDetails.KUBECONFIG"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "spec.network.vnet.name"
+                  - fromFieldPath: "spec.network.subnets[0].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "spec.forProvider.defaultNodePool.vnetSubnetIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.defaultNodePool.vnetSubnetIdSelector.matchLabels[crossplane.io/namespace]"
 
           # 5. AKS Node Pool
           - name: aksNodePool
@@ -139,24 +274,43 @@ spec:
               apiVersion: containerservice.azure.m.upbound.io/v1beta1
               kind: KubernetesClusterNodePool
               metadata:
-                name: "worker"
+                name: workerpool
               spec:
                 forProvider:
                   kubernetesClusterIdSelector:
                     matchControllerRef: true
-                  nodeCount: 1
+                  nodeCount: 2
+                  mode: User
                   tags:
                     provisioner: crossplane
                   vmSize: Standard_D2_v2
                   vnetSubnetIdSelector:
-                    matchControllerRef: true
+                    matchLabels:
             patches:
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.aksNodeCount"
+                fromFieldPath: "spec.aks.name"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.aks.nodeCount"
                 toFieldPath: "spec.forProvider.nodeCount"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.aksNodeSku"
+                fromFieldPath: "spec.aks.nodeSku"
                 toFieldPath: "spec.forProvider.vmSize"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "spec.network.vnet.name"
+                  - fromFieldPath: "spec.network.subnets[0].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "spec.forProvider.vnetSubnetIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.vnetSubnetIdSelector.matchLabels[crossplane.io/namespace]"
 
           # 6. Azure Key Vault
           # - name: keyVault

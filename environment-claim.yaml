@@ -1,12 +1,70 @@
 apiVersion: platform.ihk.org/v1alpha1
 kind: Environment
 metadata:
-  name: devenvironment123
-  namespace: default
+  name: devenv123
+  namespace: app-team-a
 spec:
   region: "West Europe"
-  aksNodeCount: 1
-  aksNodeImage: "Ubuntu2204"
-  aksNodeSku: "Standard_D2_v2"
-  aksKubernetesVersion: "1.30.0"
 
+  # Owner and purpose metadata
+  owner: "team-a"
+  purpose: "dev"
+
+  # Resource Group
+  resourceGroup:
+    name: "rg-devenv123"
+
+  # AKS Cluster
+  aks:
+    name: "aks-devenv123"
+    version: "1.30.0"
+    nodeCount: 2
+    nodeImage: "Ubuntu2204"
+    nodeSku: "Standard_D2_v2"
+    networkProfile:
+      networkPlugin: "azure"
+      networkPolicy: "calico"
+      serviceCidr: "20.0.0.0/16"
+      dnsServiceIp: "20.0.0.10"
+
+  # Key Vault
+  keyVault:
+    name: "kv-devenv123"
+
+  # Network
+  network:
+    vnet:
+      name: "vnet-devenv"
+      addressSpace: "10.0.0.0/16"
+    subnets:
+      - name: "subnet-aks"
+        addressPrefix: "10.0.1.0/24"
+        purpose: "aks"
+      - name: "subnet-db"
+        addressPrefix: "10.0.2.0/24"
+        purpose: "database"
+
+  # # Database
+  # database:
+  #   engine: "PostgreSQL"
+  #   version: "16"
+  #   sku: "B_Gen5_1"
+  #   storageGB: 20
+  #   dbName: "appdb"
+
+  # # Key Vault
+  # keyVault:
+  #   name: "kv-devenv"
+  #   sku: "standard"
+
+  # # Queue
+  # queue:
+  #   type: "servicebus"
+  #   tier: "standard"
+  #   name: "sb-devenv"
+
+  # # Secret sync control
+  # secretSync:
+  #   pushToKeyVault: true
+  #   exportToCluster: true
+  #   targetNamespace: "app-team-a"
