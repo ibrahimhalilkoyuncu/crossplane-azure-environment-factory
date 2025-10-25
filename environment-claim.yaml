@@ -1,0 +1,12 @@
+apiVersion: platform.ihk.org/v1alpha1
+kind: Environment
+metadata:
+  name: devenvironment123
+  namespace: default
+spec:
+  region: "West Europe"
+  aksNodeCount: 1
+  aksNodeImage: "Ubuntu2204"
+  aksNodeSku: "Standard_D2_v2"
+  aksKubernetesVersion: "1.30.0"
+

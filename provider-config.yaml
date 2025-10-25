@@ -1,0 +1,11 @@
+apiVersion: azure.m.upbound.io/v1beta1
+metadata:
+  name: default
+kind: ClusterProviderConfig
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      namespace: crossplane-system
+      name: azure-secret
+      key: creds

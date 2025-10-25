@@ -1,0 +1,43 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: environments.platform.ihk.org
+spec:
+  scope: Namespaced
+  group: platform.ihk.org
+  names:
+    kind: Environment
+    plural: environments
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              region:
+                type: string
+                description: "The Azure region to deploy resources in."
+                default: "West Europe"
+              aksNodeCount:
+                type: integer
+                description: "Number of nodes in the AKS cluster."
+                default: 1
+              aksNodeImage:
+                type: string
+                description: "The node image to use for AKS nodes."
+                default: "Ubuntu2204"
+              aksNodeSku:
+                type: string
+                description: "The SKU for AKS nodes."
+                default: "Standard_D2_v2"
+              aksKubernetesVersion:
+                type: string
+                description: "The Kubernetes version for the AKS cluster."
+                default: "1.27.0"
+            required:
+            - region
