@@ -23,12 +23,19 @@ spec:
                 type: string
                 description: "The Azure region to deploy resources in."
                 default: "West Europe"
-              owner:
-                type: string
-                description: "The owner of the environment."
-              purpose:
-                type: string
-                description: "The purpose of the environment (e.g., dev, qa)."
+              environment:
+                type: object
+                description: "Environment metadata configuration."
+                properties:
+                  owner:
+                    type: string
+                    description: "The owner of the environment."
+                  purpose:
+                    type: string
+                    description: "The purpose of the environment (e.g., dev, qa)."
+                required:
+                - owner
+                - purpose
               resourceGroup:
                 type: object
                 description: "Resource group configuration."
@@ -95,8 +102,13 @@ spec:
                   name:
                     type: string
                     description: "Name of the Key Vault."
+                  sku:
+                    type: string
+                    description: "SKU for Key Vault."
+                    default: "standard"
                 required:
                 - name
+                - sku
               network:
                 type: object
                 description: "Network configuration."
@@ -136,11 +148,54 @@ spec:
                 required:
                 - vnet
                 - subnets
+              database:
+                type: object
+                description: "Database configuration."
+                properties:
+                  engine:
+                    type: string
+                    description: "Database engine (e.g., PostgreSQL)."
+                    default: "PostgreSQL"
+                  version:
+                    type: string
+                    description: "Database version."
+                    default: "16"
+                  sku:
+                    type: string
+                    description: "Database SKU."
+                    default: "B_Gen5_1"
+                  storageMb:
+                    type: integer
+                    description: "Storage size in MB."
+                    default: 32768
+                  dbName:
+                    type: string
+                    description: "Name of the database."
+                required:
+                - engine
+                - version
+                - sku
+                - storageGB
+                - dbName
+              identity:
+                type: object
+                description: "Identity configuration for Azure resources."
+                properties:
+                  tenantId:
+                    type: string
+                    description: "Azure Tenant ID for Key Vault."
+                  principalId:
+                    type: string
+                    description: "Service Principal Object ID for RBAC assignments."
+                required:
+                - tenantId
+                - principalId
             required:
             - region
-            - owner
-            - purpose
+            - environment
             - resourceGroup
             - aks
             - keyVault
             - network
+            - database
+            - identity

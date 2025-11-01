@@ -36,10 +36,10 @@ spec:
                 fromFieldPath: "metadata.namespace"
                 toFieldPath: "metadata.labels[crossplane.io/namespace]"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.owner"
+                fromFieldPath: "spec.environment.owner"
                 toFieldPath: "spec.forProvider.tags.owner"
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.purpose"
+                fromFieldPath: "spec.environment.purpose"
                 toFieldPath: "spec.forProvider.tags.purpose"
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.region"
@@ -96,7 +96,7 @@ spec:
               - type: CombineFromComposite
                 combine:
                   variables:
-                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.network.vnet.name"
                   - fromFieldPath: "spec.network.subnets[0].name"
                   strategy: string
                   string:
@@ -140,13 +140,21 @@ spec:
                   addressPrefixes: ["10.0.2.0/24"]
                   resourceGroupNameSelector:
                     matchLabels:
-                  virtualNetworkNameSelector:
+                  virtualNetworkNameSelector:              
                     matchLabels:
+                  serviceEndpoints:
+                  - Microsoft.Storage
+                  delegation:
+                  - name: fs
+                    serviceDelegation:
+                      actions:
+                      - Microsoft.Network/virtualNetworks/subnets/join/action
+                      name: Microsoft.DBforPostgreSQL/flexibleServers
             patches:
               - type: CombineFromComposite
                 combine:
                   variables:
-                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.network.vnet.name"
                   - fromFieldPath: "spec.network.subnets[1].name"
                   strategy: string
                   string:
@@ -179,6 +187,99 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: "metadata.namespace"
                 toFieldPath: "spec.forProvider.virtualNetworkNameSelector.matchLabels[crossplane.io/namespace]"
+
+          # 3c. Private DNS Zone
+          - name: privateDnsZone
+            base:
+              apiVersion: network.azure.m.upbound.io/v1beta1
+              kind: PrivateDNSZone
+              spec:
+                forProvider:
+                  resourceGroupNameSelector:
+                    matchLabels:
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  strategy: string
+                  string:
+                    fmt: "%s.postgres.database.azure.com"
+                toFieldPath: "metadata.name"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  strategy: string
+                  string:
+                    fmt: "%s.postgres.database.azure.com"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+
+          # 3d. Private DNS Zone Virtual Network Link
+          - name: privateDnsZoneVnetLink
+            base:
+              apiVersion: network.azure.m.upbound.io/v1beta1
+              kind: PrivateDNSZoneVirtualNetworkLink
+              spec:
+                forProvider:
+                  privateDnsZoneNameSelector:
+                    matchLabels:
+                  resourceGroupNameSelector:
+                    matchLabels:
+                  virtualNetworkIdSelector:
+                    matchLabels:
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  strategy: string
+                  string:
+                    fmt: "%s.postgres.database.azure.com-vnet-link"
+                toFieldPath: "metadata.name"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  strategy: string
+                  string:
+                    fmt: "%s.postgres.database.azure.com-vnet-link"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  strategy: string
+                  string:
+                    fmt: "%s.postgres.database.azure.com"
+                toFieldPath: "spec.forProvider.privateDnsZoneNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.privateDnsZoneNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.network.vnet.name"
+                toFieldPath: "spec.forProvider.virtualNetworkIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.virtualNetworkIdSelector.matchLabels[crossplane.io/namespace]"
 
           # 4. AKS Cluster
           - name: aksCluster
@@ -313,29 +414,266 @@ spec:
                 toFieldPath: "spec.forProvider.vnetSubnetIdSelector.matchLabels[crossplane.io/namespace]"
 
           # 6. Azure Key Vault
-          # - name: keyVault
-          #   base:
-          #     apiVersion: keyvault.azure.m.upbound.io/v1beta1
-          #     kind: Vault
-          #     spec:
-          #       forProvider:
-          #         location: "West Europe"
-          #         resourceGroupNameSelector:
-          #           matchLabels:
-          #             environment: "dummy"
-          #         skuName: "standard"
-          #         tenantId: "ac401188-1955-4ac3-a3ff-8e6b0143b153"
-          #         enabledForDeployment: true
-          #         enabledForDiskEncryption: true
-          #         enabledForTemplateDeployment: true
-          #         enableRbacAuthorization: true
-          #   patches:
-          #     - type: FromCompositeFieldPath
-          #       fromFieldPath: "metadata.name"
-          #       toFieldPath: "metadata.name"
-          #     - type: FromCompositeFieldPath
-          #       fromFieldPath: "spec.region"
-          #       toFieldPath: "spec.forProvider.location"
-          #     - type: ToCompositeFieldPath
-          #       fromFieldPath: "status.atConnection.vaultUri"
-          #       toFieldPath: "connectionDetails.KEYVAULT_URI"
+          - name: keyVault
+            base:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Vault
+              spec:
+                forProvider:
+                  location: "West Europe"
+                  resourceGroupNameSelector:
+                    matchLabels:
+                  skuName: "standard"
+                  enabledForDeployment: true
+                  enabledForDiskEncryption: true
+                  enabledForTemplateDeployment: true
+                  enableRbacAuthorization: true
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.keyVault.name"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.keyVault.name"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.region"
+                toFieldPath: "spec.forProvider.location"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.keyVault.sku"
+                toFieldPath: "spec.forProvider.skuName"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.identity.tenantId"
+                toFieldPath: "spec.forProvider.tenantId"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "status.atConnection.vaultUri"
+                toFieldPath: "connectionDetails.KEYVAULT_URI"
+
+          # 10. Key Vault Role Assignment
+          - name: keyVaultRoleAssignment
+            base:
+              apiVersion: authorization.azure.m.upbound.io/v1beta1
+              kind: RoleAssignment
+              spec:
+                forProvider:
+                  principalId: "Service Principal Object ID"
+                  roleDefinitionName: "Key Vault Secrets Officer"
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.keyVault.name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-role-assignment"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.identity.principalId"
+                toFieldPath: "spec.forProvider.principalId"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "spec.keyVault.name"
+                  strategy: string
+                  string:
+                    fmt: "/subscriptions/c7168f05-81e4-4d55-9647-af014666725d/resourceGroups/rg-devenv123/providers/Microsoft.KeyVault/vaults/%s"
+                toFieldPath: "spec.forProvider.scope"
+
+          # 8. PostgreSQL Server
+          - name: postgresqlServer
+            base:
+              apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+              kind: FlexibleServer
+              spec:
+                forProvider:
+                  administratorLogin: "psqladmin"
+                  administratorPasswordSecretRef:
+                    name: db-admin-password
+                    key: password
+                  location: "West Europe"
+                  resourceGroupNameSelector:
+                    matchLabels:
+                  privateDnsZoneIdSelector:
+                    matchLabels:
+                  skuName: "B_Standard_B1ms"
+                  storageMb: 32768
+                  version: "16"
+                  storageTier: P4
+                  delegatedSubnetIdSelector:
+                    matchLabels:
+                  publicNetworkAccessEnabled: false
+                  zone: "1"
+                writeConnectionSecretToRef:
+                  name: db-connection-info
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.database.dbName"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-server"
+                toFieldPath: "metadata.name"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.database.dbName"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-server"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.database.dbName"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-server"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.region"
+                toFieldPath: "spec.forProvider.location"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.database.sku"
+                toFieldPath: "spec.forProvider.skuName"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.database.storageMb"
+                toFieldPath: "spec.forProvider.storageMb"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.database.version"
+                toFieldPath: "spec.forProvider.version"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceGroup.name"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.resourceGroupNameSelector.matchLabels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "spec.network.vnet.name"
+                  - fromFieldPath: "spec.network.subnets[1].name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s"
+                toFieldPath: "spec.forProvider.delegatedSubnetIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.delegatedSubnetIdSelector.matchLabels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  strategy: string
+                  string:
+                    fmt: "%s.postgres.database.azure.com"
+                toFieldPath: "spec.forProvider.privateDnsZoneIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.privateDnsZoneIdSelector.matchLabels[crossplane.io/namespace]"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "status.atConnection.fqdn"
+                toFieldPath: "connectionDetails.DB_HOST"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "status.atConnection.loginName"
+                toFieldPath: "connectionDetails.DB_USER"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "status.atConnection.loginPassword"
+                toFieldPath: "connectionDetails.DB_PASSWORD"
+
+          # 9. PostgreSQL Database
+          - name: postgresqlDatabase
+            base:
+              apiVersion: dbforpostgresql.azure.m.upbound.io/v1beta1
+              kind: FlexibleServerDatabase
+              spec:
+                forProvider:
+                  charset: "UTF8"
+                  collation: "en_US.utf8"
+                  serverIdSelector:
+                    matchLabels:
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.database.dbName"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.database.dbName"
+                toFieldPath: "metadata.labels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.database.dbName"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-server"
+                toFieldPath: "spec.forProvider.serverIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.serverIdSelector.matchLabels[crossplane.io/namespace]"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "status.atConnection.databaseName"
+                toFieldPath: "connectionDetails.DB_NAME"
+
+          # 11. Key Vault Secret for DB Password
+          - name: keyVaultSecretDbPassword
+            base:
+              apiVersion: keyvault.azure.m.upbound.io/v1beta1
+              kind: Secret
+              spec:
+                forProvider:
+                  keyVaultIdSelector:
+                    matchLabels:
+                  name: "db-password"
+                  valueSecretRef:
+                    name: db-connection-info
+                    key: password
+            patches:
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.keyVault.name"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-db-password"
+                toFieldPath: "metadata.name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "metadata.labels[crossplane.io/namespace]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.keyVault.name"
+                toFieldPath: "spec.forProvider.keyVaultIdSelector.matchLabels[crossplane.io/external-resource-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "metadata.namespace"
+                toFieldPath: "spec.forProvider.keyVaultIdSelector.matchLabels[crossplane.io/namespace]"
+              - type: CombineFromComposite
+                combine:
+                  variables:
+                  - fromFieldPath: "metadata.name"
+                  - fromFieldPath: "spec.database.dbName"
+                  strategy: string
+                  string:
+                    fmt: "%s-%s-server"
+                toFieldPath: "spec.forProvider.valueSecretRef.name"

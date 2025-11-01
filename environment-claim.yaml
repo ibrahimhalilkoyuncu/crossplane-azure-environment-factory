@@ -6,9 +6,15 @@ metadata:
 spec:
   region: "West Europe"
 
-  # Owner and purpose metadata
-  owner: "team-a"
-  purpose: "dev"
+  # Environment metadata
+  environment:
+    owner: "team-a"
+    purpose: "dev"
+
+  # Identity configuration
+  identity:
+    tenantId: "<yourTenantId>"
+    principalId: "<servicePrincipleIdToAssignPermission>"
 
   # Resource Group
   resourceGroup:
@@ -30,6 +36,7 @@ spec:
   # Key Vault
   keyVault:
     name: "kv-devenv123"
+    sku: "standard"
 
   # Network
   network:
@@ -44,27 +51,10 @@ spec:
         addressPrefix: "10.0.2.0/24"
         purpose: "database"
 
-  # # Database
-  # database:
-  #   engine: "PostgreSQL"
-  #   version: "16"
-  #   sku: "B_Gen5_1"
-  #   storageGB: 20
-  #   dbName: "appdb"
-
-  # # Key Vault
-  # keyVault:
-  #   name: "kv-devenv"
-  #   sku: "standard"
-
-  # # Queue
-  # queue:
-  #   type: "servicebus"
-  #   tier: "standard"
-  #   name: "sb-devenv"
-
-  # # Secret sync control
-  # secretSync:
-  #   pushToKeyVault: true
-  #   exportToCluster: true
-  #   targetNamespace: "app-team-a"
+  # Database
+  database:
+    engine: "PostgreSQL"
+    version: "16"
+    sku: "B_Standard_B1ms"
+    storageMb: 32768
+    dbName: "appdb"
