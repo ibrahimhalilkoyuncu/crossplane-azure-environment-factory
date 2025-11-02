@@ -175,12 +175,15 @@ spec:
                 - engine
                 - version
                 - sku
-                - storageGB
+                - storageMb
                 - dbName
               identity:
                 type: object
                 description: "Identity configuration for Azure resources."
                 properties:
+                  subscriptionId:
+                    type: string
+                    description: "Azure Subscription ID for resources."
                   tenantId:
                     type: string
                     description: "Azure Tenant ID for Key Vault."
@@ -188,6 +191,7 @@ spec:
                     type: string
                     description: "Service Principal Object ID for RBAC assignments."
                 required:
+                - subscriptionId
                 - tenantId
                 - principalId
             required:

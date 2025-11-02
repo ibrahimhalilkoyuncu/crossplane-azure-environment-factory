@@ -1,6 +1,5 @@
 # Crossplane Azure Environment Factory
-
-This project demonstrates how to create Azure managed resources using Crossplane, an open-source Kubernetes add-on that enables platform teams to assemble infrastructure from multiple vendors, and expose higher level self-service APIs for application teams to consume.
+This project demonstrates how a single declarative definition can orchestrate a complex multi-service Azure environment. It shows the power of Crossplane to encapsulate infrastructure logic, promote self-service environments, and manage everything through the Kubernetes control plane.
 
 ## Overview
 

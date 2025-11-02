@@ -15,6 +15,7 @@ spec:
   identity:
     tenantId: "<yourTenantId>"
     principalId: "<servicePrincipleIdToAssignPermission>"
+    subscriptionId: "<yourSubscriptionId>"
 
   # Resource Group
   resourceGroup:

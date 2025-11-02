@@ -465,7 +465,9 @@ spec:
               spec:
                 forProvider:
                   principalId: "Service Principal Object ID"
+                  principalType: ServicePrincipal
                   roleDefinitionName: "Key Vault Secrets Officer"
+                  scope: ""
             patches:
               - type: CombineFromComposite
                 combine:
@@ -485,10 +487,12 @@ spec:
               - type: CombineFromComposite
                 combine:
                   variables:
+                  - fromFieldPath: "spec.identity.subscriptionId"
+                  - fromFieldPath: "spec.resourceGroup.name"
                   - fromFieldPath: "spec.keyVault.name"
                   strategy: string
                   string:
-                    fmt: "/subscriptions/c7168f05-81e4-4d55-9647-af014666725d/resourceGroups/rg-devenv123/providers/Microsoft.KeyVault/vaults/%s"
+                    fmt: "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.KeyVault/vaults/%s"
                 toFieldPath: "spec.forProvider.scope"
 
           # 8. PostgreSQL Server
@@ -637,43 +641,43 @@ spec:
                 toFieldPath: "connectionDetails.DB_NAME"
 
           # 11. Key Vault Secret for DB Password
-          - name: keyVaultSecretDbPassword
-            base:
-              apiVersion: keyvault.azure.m.upbound.io/v1beta1
-              kind: Secret
-              spec:
-                forProvider:
-                  keyVaultIdSelector:
-                    matchLabels:
-                  name: "db-password"
-                  valueSecretRef:
-                    name: db-connection-info
-                    key: password
-            patches:
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                  - fromFieldPath: "metadata.name"
-                  - fromFieldPath: "spec.keyVault.name"
-                  strategy: string
-                  string:
-                    fmt: "%s-%s-db-password"
-                toFieldPath: "metadata.name"
-              - type: FromCompositeFieldPath
-                fromFieldPath: "metadata.namespace"
-                toFieldPath: "metadata.labels[crossplane.io/namespace]"
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.keyVault.name"
-                toFieldPath: "spec.forProvider.keyVaultIdSelector.matchLabels[crossplane.io/external-resource-name]"
-              - type: FromCompositeFieldPath
-                fromFieldPath: "metadata.namespace"
-                toFieldPath: "spec.forProvider.keyVaultIdSelector.matchLabels[crossplane.io/namespace]"
-              - type: CombineFromComposite
-                combine:
-                  variables:
-                  - fromFieldPath: "metadata.name"
-                  - fromFieldPath: "spec.database.dbName"
-                  strategy: string
-                  string:
-                    fmt: "%s-%s-server"
-                toFieldPath: "spec.forProvider.valueSecretRef.name"
+          # - name: keyVaultSecretDbPassword
+          #   base:
+          #     apiVersion: keyvault.azure.m.upbound.io/v1beta1
+          #     kind: Secret
+          #     spec:
+          #       forProvider:
+          #         keyVaultIdSelector:
+          #           matchLabels:
+          #         name: "db-password"
+          #         valueSecretRef:
+          #           name: db-connection-info
+          #           key: password
+          #   patches:
+          #     - type: CombineFromComposite
+          #       combine:
+          #         variables:
+          #         - fromFieldPath: "metadata.name"
+          #         - fromFieldPath: "spec.keyVault.name"
+          #         strategy: string
+          #         string:
+          #           fmt: "%s-%s-db-password"
+          #       toFieldPath: "metadata.name"
+          #     - type: FromCompositeFieldPath
+          #       fromFieldPath: "metadata.namespace"
+          #       toFieldPath: "metadata.labels[crossplane.io/namespace]"
+          #     - type: FromCompositeFieldPath
+          #       fromFieldPath: "spec.keyVault.name"
+          #       toFieldPath: "spec.forProvider.keyVaultIdSelector.matchLabels[crossplane.io/external-resource-name]"
+          #     - type: FromCompositeFieldPath
+          #       fromFieldPath: "metadata.namespace"
+          #       toFieldPath: "spec.forProvider.keyVaultIdSelector.matchLabels[crossplane.io/namespace]"
+          #     - type: CombineFromComposite
+          #       combine:
+          #         variables:
+          #         - fromFieldPath: "metadata.name"
+          #         - fromFieldPath: "spec.database.dbName"
+          #         strategy: string
+          #         string:
+          #           fmt: "%s-%s-server"
+          #       toFieldPath: "spec.forProvider.valueSecretRef.name"
